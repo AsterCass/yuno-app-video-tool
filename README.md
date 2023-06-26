@@ -4,7 +4,7 @@
 
 使用`frp`作为核心进行进行本地资源/服务的互联化，使得公网可访问
 
-<img src="https://astercasc-web-admin-1256368017.cos.ap-shanghai.myqcloud.com/admin-web-article-img/github_yuno-app-video-tool_1.jpg">
+![image](https://i.imgur.com/YBPfl1W.jpg)
 
 ## 已有功能支持
 
