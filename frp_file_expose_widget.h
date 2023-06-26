@@ -2,10 +2,15 @@
 #ifndef FRPFILEEXPOSEWIDGET_H
 #define FRPFILEEXPOSEWIDGET_H
 
+#include "http_service.h"
 #include "output_widget.h"
+#include <QDir>
 #include <QFile>
 #include <QFileDialog>
 #include <QHBoxLayout>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QLabel>
 #include <QLineEdit>
 #include <QProcess>
@@ -14,6 +19,7 @@
 #include <QTextBrowser>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <QtConcurrent/QtConcurrent>
 
 class FrpFileExposeWidget : public QWidget
 {
@@ -33,6 +39,7 @@ private:
     bool configCheck();
     void saveConfig();
     void readConfig();
+    void updateModule();
     void stopProccess();
     void clearConsole();
 

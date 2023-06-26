@@ -7,6 +7,8 @@ FrpFileExposeWidget::FrpFileExposeWidget(QWidget* parent) : QWidget{ parent }
     m_frpFileExposeLayout->addWidget(createMainWidget());
     m_frpFileExposeLayout->setContentsMargins(20, 20, 20, 20);
     setLayout(m_frpFileExposeLayout);
+    // update module
+    updateModule();
     // read config
     readConfig();
 }
@@ -58,6 +60,11 @@ void FrpFileExposeWidget::lanuch()
         OutputWidget::printMessageError("穿透执行中，请勿重复执行");
         return;
     }
+    if (!QFile::exists("./config/frpc.ini"))
+    {
+        OutputWidget::printMessageError("配置未保存，请保存配置");
+        return;
+    }
     OutputWidget::printMessage("服务启动中...");
     m_process        = new QProcess();
     QString     exec = "./extend/frpc";
@@ -97,7 +104,10 @@ void FrpFileExposeWidget::processError(QProcess::ProcessError error)
     switch (error)
     {
     case QProcess::FailedToStart:
-        OutputWidget::printMessageError("辅助程序丢失，请检查程序目录下是否包含【extend】文件夹，或者您可能没有足够的权限或资源来调用该程序");
+        OutputWidget::printMessageError("辅助程序无法启动，请尝试：\n"
+                                        "【1】删除目录下除了exe可执行文件外其他文件，以管理员权限重新执行\n"
+                                        "【2】查看是否Windows防护或者其他杀毒软件拦截，解除拦截后继续执行步骤【1】\n"
+                                        "【3】如果以上方法都不生效，请自行在GITHUB下载frp可执行文件frpc.exe到extend文件夹目录下");
         break;
     case QProcess::Crashed:
         OutputWidget::printMessageWarn("服务已终止");
@@ -137,12 +147,122 @@ bool FrpFileExposeWidget::configCheck()
     return isCompleted;
 }
 
+void downloadFinish(FrpResult result)
+{
+    QFile extendAdmin("./extend/extend-admin.json");
+    if (!extendAdmin.open(QIODeviceBase::ReadWrite))
+    {
+        OutputWidget::printMessageError("基础文件夹配置失败，请检查权限");
+    }
+    extendAdmin.resize(0);
+    QJsonObject frpcObj;
+    frpcObj["fileName"] = "frpc.exe";
+    // todo get version
+    frpcObj["tag"] = result.tag;
+    QJsonObject obj;
+    obj["frpc"] = frpcObj;
+    QJsonDocument doc(obj);
+    extendAdmin.write(doc.toJson());
+    extendAdmin.close();
+    // get version
+    if (0 == QFile("./extend/frp.zip").size())
+    {
+        OutputWidget::printMessageError("下载超时，请开启梯子或选择自带基础组件的版本");
+        return;
+    }
+    OutputWidget::printMessage(QString("FRPC下载完成，当前版本为【%1】，正在解压...").arg(result.tag));
+    // unzip
+    QProcess*   unzipProcess = new QProcess();
+    QString     exec         = "tar";
+    QStringList params;
+    params << "-xf"
+           << "./extend/frp.zip"
+           << "-C"
+           << "./extend/";
+    unzipProcess->start(exec, params);
+    unzipProcess->waitForFinished();
+    delete unzipProcess;
+    QString dirName = "./extend/" + result.name.left(result.name.size() - QString(".zip").size());
+    if (!QDir(dirName).exists())
+    {
+        OutputWidget::printMessageError("解压失败，请联系【astercass@qq.com】");
+        return;
+    }
+    OutputWidget::printMessage("解压完成，请配置FRP文件穿透相关参数后启动");
+    QFile frpcFile(QString("%1/frpc.exe").arg(dirName));
+    QFile frpsFile(QString("%1/frps.exe").arg(dirName));
+    if (!frpcFile.exists() || !frpsFile.exists())
+    {
+        OutputWidget::printMessageError("下载链接不报包括指定资源，请联系【astercass@qq.com】修复");
+    }
+    // move
+    frpcFile.rename(QString("./extend/frpc.exe"));
+    frpsFile.rename(QString("./extend/frps.exe"));
+    frpcFile.close();
+    frpsFile.close();
+    // delete
+    QFile::remove("./extend/frp.zip");
+    QDir(QDir(dirName).absolutePath()).removeRecursively();
+}
+
+void FrpFileExposeWidget::updateModule()
+{
+    bool configBuild = QDir("config").exists() ? true : QDir().mkdir("config");
+    bool extendBuild = QDir("extend").exists() ? true : QDir().mkdir("extend");
+    if (!configBuild || !extendBuild)
+    {
+        OutputWidget::printMessageError("基础文件夹配置失败，请检查权限");
+        return;
+    }
+    if (QFile("./extend/frpc.exe").exists())
+    {
+        QFile extendAdmin("./extend/extend-admin.json");
+        if (extendAdmin.open(QIODeviceBase::ReadWrite))
+        {
+            // read
+            QJsonDocument extendAdminJsonDoc = QJsonDocument::fromJson(extendAdmin.readAll());
+            QJsonObject   jsonObject         = extendAdminJsonDoc.object();
+            QString       frpcTag            = jsonObject["frpc"].toObject()["tag"].toString();
+            // read fail
+            if (frpcTag.isEmpty())
+            {
+                OutputWidget::printMessageWarn("检测到管理文件被修改，正在修复...");
+                extendAdmin.resize(0);
+                QJsonObject frpcObj;
+                frpcObj["fileName"] = "frpc.exe";
+                frpcObj["tag"]      = "YUNO_UNKNOWN_TAG";
+                QJsonObject obj;
+                obj["frpc"] = frpcObj;
+                QJsonDocument doc(obj);
+                extendAdmin.write(doc.toJson());
+                OutputWidget::printMessage("文件修复完成，当前FRPC版本号未知");
+                frpcTag = "YUNO_UNKNOWN_TAG";
+            }
+            else
+            {
+                FrpResult result = HttpService::getLatestReleaseData(QString("fatedier"), QString("frp"));
+                OutputWidget::printMessage(QString("FRPC初始化完成，当前版本为【%1】，最新版本号为【%2】").arg(frpcTag, result.tag));
+            }
+            extendAdmin.close();
+        }
+    }
+    else
+    {
+        OutputWidget::printMessage("基础组件FRPC不存在，正在下载中...");
+        QtConcurrent::run([=]() {
+            FrpResult result = HttpService::getLatestReleaseData(QString("fatedier"), QString("frp"));
+            HttpService::downloadFile("./extend/frp.zip", result, downloadFinish);
+        });
+    }
+}
+
 void FrpFileExposeWidget::readConfig()
 {
     QFile configFile("./config/frpc.ini");
     if (!configFile.open(QIODeviceBase::ReadOnly))
     {
-        OutputWidget::printMessageWarn(QString("未在【").append(QDir::currentPath()).append("/config").append("】下找到默认配置"));
+        //        OutputWidget::printMessage(QString("未找到默认配置"));
+        //        qDebug() << QString("未在【").append(QDir::currentPath()).append("/config").append("】下找到默认配置");
         return;
     }
     const QMap<QString, QWidget*> configWidgetMap{

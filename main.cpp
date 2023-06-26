@@ -10,7 +10,7 @@ int main(int argc, char* argv[])
     AdminWidget  w;
     w.show();
     // config
-    //    QApplication::setQuitOnLastWindowClosed(false);
+    QApplication::setQuitOnLastWindowClosed(false);
     // ret
     return app.exec();
 }

@@ -1,4 +1,4 @@
-QT       += core gui
+QT       += core gui network
 
 greaterThan(QT_MAJOR_VERSION, 5): QT += widgets
 
@@ -12,6 +12,7 @@ TARGET = AsterCascVideoTool
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    http_service.cpp \
     main.cpp \
     constants.cpp \
     admin_widget.cpp \
@@ -22,6 +23,7 @@ SOURCES += \
 HEADERS += \
     constants.h \
     admin_widget.h \
+    http_service.h \
     input_widget.h \
     output_widget.h \
     frp_file_expose_widget.h 
