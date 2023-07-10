@@ -40,6 +40,7 @@ private:
     void saveConfig();
     void readConfig();
     void updateModule();
+    void updateModuleForce();
     void stopProccess();
     void clearConsole();
 
@@ -83,8 +84,11 @@ private:
     QPushButton* m_frpFileExposeSave;
     QPushButton* m_frpFileExposeStop;
     QPushButton* m_frpFileExposeClear;
+    QPushButton* m_frpFileVersionUpdate;
     QHBoxLayout* m_frpFileExposeBtnWidgetLayout;
     QWidget*     m_frpFileExposeBtnWidget;
+    QHBoxLayout* m_frpFielSystemBtnWidgetLayout;
+    QWidget*     m_frpFielSystemBtnWidget;
 
     //    const QMap<QString, QWidget*> configWidgetMap{ { "server_addr", m_serverAddress } };
 };

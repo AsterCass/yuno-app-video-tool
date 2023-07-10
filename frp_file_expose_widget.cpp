@@ -44,8 +44,11 @@ FrpFileExposeWidget::~FrpFileExposeWidget()
     delete m_frpFileExposeSave;
     delete m_frpFileExposeStop;
     delete m_frpFileExposeClear;
+    delete m_frpFileVersionUpdate;
     delete m_frpFileExposeBtnWidgetLayout;
     delete m_frpFileExposeBtnWidget;
+    delete m_frpFielSystemBtnWidgetLayout;
+    delete m_frpFielSystemBtnWidget;
     // base
     delete m_process;
     delete m_mainWidgetLayout;
@@ -105,8 +108,8 @@ void FrpFileExposeWidget::processError(QProcess::ProcessError error)
     {
     case QProcess::FailedToStart:
         OutputWidget::printMessageError("辅助程序无法启动，请尝试：\n"
-                                        "【1】删除目录下除了exe可执行文件外其他文件，以管理员权限重新执行\n"
-                                        "【2】查看是否Windows防护或者其他杀毒软件拦截，解除拦截后继续执行步骤【1】\n"
+                                        "【1】查看是否Windows防护或者其他杀毒软件拦截，解除拦截，还原隔离文件\n"
+                                        "【2】删除目录下除了exe可执行文件外其他文件，以管理员权限重新执行\n"
                                         "【3】如果以上方法都不生效，请自行在GITHUB下载frp可执行文件frpc.exe到extend文件夹目录下");
         break;
     case QProcess::Crashed:
@@ -205,6 +208,16 @@ void downloadFinish(FrpResult result)
     QDir(QDir(dirName).absolutePath()).removeRecursively();
 }
 
+void FrpFileExposeWidget::updateModuleForce()
+{
+    m_frpFileVersionUpdate->setDisabled(true);
+    OutputWidget::printMessage("组件下载中...");
+    QtConcurrent::run([=]() {
+        FrpResult result = HttpService::getLatestReleaseData(QString("fatedier"), QString("frp"));
+        HttpService::downloadFile("./extend/frp.zip", result, downloadFinish);
+    });
+}
+
 void FrpFileExposeWidget::updateModule()
 {
     bool configBuild = QDir("config").exists() ? true : QDir().mkdir("config");
@@ -242,17 +255,15 @@ void FrpFileExposeWidget::updateModule()
             {
                 FrpResult result = HttpService::getLatestReleaseData(QString("fatedier"), QString("frp"));
                 OutputWidget::printMessage(QString("FRPC初始化完成，当前版本为【%1】，最新版本号为【%2】").arg(frpcTag, result.tag));
+                m_frpFileVersionUpdate->setDisabled(frpcTag == result.tag);
             }
             extendAdmin.close();
         }
     }
     else
     {
-        OutputWidget::printMessage("基础组件FRPC不存在，正在下载中...");
-        QtConcurrent::run([=]() {
-            FrpResult result = HttpService::getLatestReleaseData(QString("fatedier"), QString("frp"));
-            HttpService::downloadFile("./extend/frp.zip", result, downloadFinish);
-        });
+        OutputWidget::printMessage("基础组件FRPC不存在");
+        updateModuleForce();
     }
 }
 
@@ -423,13 +434,25 @@ QWidget* FrpFileExposeWidget::createMainWidget()
         connect(m_frpFileExposeSave, &QPushButton::clicked, this, &FrpFileExposeWidget::saveConfig);
         m_frpFileExposeStop = new QPushButton(" 停止穿透 ");
         connect(m_frpFileExposeStop, &QPushButton::clicked, this, &FrpFileExposeWidget::stopProccess);
-        m_frpFileExposeClear = new QPushButton(" 清空控制台 ");
-        connect(m_frpFileExposeClear, &QPushButton::clicked, this, &FrpFileExposeWidget::clearConsole);
+
         m_frpFileExposeBtnWidgetLayout = new QHBoxLayout();
+        m_frpFileExposeBtnWidgetLayout->setSpacing(20);
         m_frpFileExposeBtnWidgetLayout->addWidget(m_frpFileExposeSave);
         m_frpFileExposeBtnWidgetLayout->addWidget(m_frpFileExposeStop);
-        m_frpFileExposeBtnWidgetLayout->addWidget(m_frpFileExposeClear);
         m_frpFileExposeBtnWidget->setLayout(m_frpFileExposeBtnWidgetLayout);
+    }
+    m_frpFielSystemBtnWidget = new QWidget();
+    {
+        m_frpFileExposeClear = new QPushButton(" 清空控制台 ");
+        connect(m_frpFileExposeClear, &QPushButton::clicked, this, &FrpFileExposeWidget::clearConsole);
+        m_frpFileVersionUpdate = new QPushButton(" 版本更新 ");
+        connect(m_frpFileVersionUpdate, &QPushButton::clicked, this, &FrpFileExposeWidget::updateModuleForce);
+
+        m_frpFielSystemBtnWidgetLayout = new QHBoxLayout();
+        m_frpFielSystemBtnWidgetLayout->setSpacing(20);
+        m_frpFielSystemBtnWidgetLayout->addWidget(m_frpFileExposeClear);
+        m_frpFielSystemBtnWidgetLayout->addWidget(m_frpFileVersionUpdate);
+        m_frpFielSystemBtnWidget->setLayout(m_frpFielSystemBtnWidgetLayout);
     }
 
     // layout
@@ -440,6 +463,7 @@ QWidget* FrpFileExposeWidget::createMainWidget()
     m_mainWidgetLayout->addWidget(m_exposePathWidget);
     m_mainWidgetLayout->addWidget(m_stripPathWidget);
     m_mainWidgetLayout->addWidget(m_frpFileExposeBtnWidget);
+    m_mainWidgetLayout->addWidget(m_frpFielSystemBtnWidget);
     m_mainWidget->setLayout(m_mainWidgetLayout);
     return m_mainWidget;
 }

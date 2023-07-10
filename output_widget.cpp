@@ -12,7 +12,6 @@ OutputWidget::OutputWidget(QWidget* parent) : QWidget{ parent }
         outputView->setObjectName("outputView");
         outputView->setStyleSheet("#outputView{background-color: rgba(25, 25, 25, 100%);font-size:15px;"
                                   "border: 2px solid grey;font-family: 'SimSun';}");
-        outputView->setReadOnly(true);
     }
     // layout
     indexLayout = new QVBoxLayout(this);
