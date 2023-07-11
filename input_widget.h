@@ -2,12 +2,16 @@
 #ifndef INPUTWIDGET_H
 #define INPUTWIDGET_H
 
-#include "frp_file_expose_widget.h"
+#include "function/core_function.h"
+#include "function/frp_file_expose_widget.h"
+#include "function/frp_service_expose_widget.h"
+#include "function/to_h264_mp4_widget.h"
 #include <QPushButton>
 #include <QTabBar>
 #include <QTabWidget>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <vector>
 
 class InputWidget : public QWidget
 {
@@ -23,17 +27,22 @@ private:
     // index
     QVBoxLayout* indexLayout;
     QTabWidget*  launchModel;
+    // current function
+    CoreFunction*              currentFunction;
+    std::vector<CoreFunction*> functionTabList;
     // frp file
-    FrpFileExposeWidget* frpFileExposeWidget;
+    CoreFunction* frpFileExposeWidget;
     // frp service
-    QWidget* frpServiceExposeWidget;
+    CoreFunction* frpServiceExposeWidget;
     // H264 change
-    QWidget* toH264Mp4Widget;
+    CoreFunction* toH264Mp4Widget;
 
 private:
-    FrpFileExposeWidget* createFrpFileExposeWidget();
-    QWidget*             createFrpServiceExposeWidget();
-    QWidget*             createToH264Mp4Widget();
+    CoreFunction* createFrpFileExposeWidget();
+    CoreFunction* createFrpServiceExposeWidget();
+    CoreFunction* createToH264Mp4Widget();
+
+    void changeTab(int index);
 
 signals:
 };

@@ -2,7 +2,7 @@
 #ifndef ADMINWIDGET_H
 #define ADMINWIDGET_H
 
-#include "constants.h"
+#include "constants/constants.h"
 #include "input_widget.h"
 #include "output_widget.h"
 #include <QAction>
